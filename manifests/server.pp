@@ -92,16 +92,17 @@ class icinga::server(
   if $_config_server {
     ($global_zones + keys($_workers) + $zone).each |String $dir| {
       file { "${::icinga2::globals::conf_dir}/zones.d/${dir}":
-        ensure => directory,
-        tag    => 'icinga2::config::file',
-        owner  => $::icinga2::globals::user,
-        group  => $::icinga2::globals::group,
-        mode   => '0750',
+        ensure  => directory,
+        tag     => 'icinga2::config::file',
+        owner   => $::icinga2::globals::user,
+        group   => $::icinga2::globals::group,
+        mode    => '0750',
       }
     }
   } else {
     file { "${::icinga2::globals::conf_dir}/zones.d":
       ensure  => directory,
+      tag     => 'icinga2::config::file',
       purge   => true,
       recurse => true,
       force   => true,

@@ -101,6 +101,12 @@ class icinga(
       $icinga_package = $::icinga2::globals::package_name
       $icinga_home    = $::icinga2::globals::spool_dir
 
+      if $facts['os']['selinux']['enabled'] and $::icinga2::globals::selinux_package_name {
+        $selinux_package = any2array($::icinga2::globals::selinux_package_name)
+      } else {
+        $selinux_package = []
+      }
+
       if $ssh_public_key {
         $icinga_shell = '/bin/bash'
       } else {
@@ -109,7 +115,7 @@ class icinga(
 
       case $::osfamily {
         'redhat': {
-          package { [ 'nagios-common', $icinga_package ]+$extra_packages:
+          package { [ 'nagios-common', $icinga_package ]+$extra_packages+$selinux_package:
             ensure => installed,
             before => User[$icinga_user],
           }
@@ -152,17 +158,18 @@ class icinga(
       if $ssh_private_key {
         file {
           default:
-            ensure => file,
-            owner  => $icinga_user,
-            group  => $icinga_group;
+            ensure  => file,
+            owner   => $icinga_user,
+            group   => $icinga_group,
+            seltype => 'icinga2_spool_t';
           ["${icinga_home}/.ssh", "${icinga_home}/.ssh/controlmasters"]:
-            ensure => directory,
-            mode   => '0700';
+            ensure  => directory,
+            mode    => '0700';
           "${icinga_home}/.ssh/id_${ssh_key_type}":
-            mode    => '0600',
-            content => $ssh_private_key;
+            mode     => '0600',
+            content  => $ssh_private_key;
           "${icinga_home}/.ssh/config":
-            content => "Host *\n  StrictHostKeyChecking no\n  ControlPath ${icinga_home}/.ssh/controlmasters/%r@%h:%p.socket\n  ControlMaster auto\n  ControlPersist 5m";
+            content  => "Host *\n  StrictHostKeyChecking no\n  ControlPath ${icinga_home}/.ssh/controlmasters/%r@%h:%p.socket\n  ControlMaster auto\n  ControlPersist 5m";
         }
       } # privkey
     } # Linux

@@ -49,7 +49,7 @@ class icinga(
   Array[String]                        $extra_packages  = [],
   Enum['file', 'syslog']               $logging_type    = 'file',
   Optional[Icinga2::LogSeverity]       $logging_level   = undef,
-  String                               $cert_name       = $::fqdn,
+  String                               $cert_name       = downcase($facts['networking']['fqdn']),
 ) {
 
   assert_private()
@@ -160,7 +160,7 @@ class icinga(
       } # osfamily
 
       if $ssh_public_key {
-        ssh_authorized_key { "${icinga_user}@${::fqdn}":
+        ssh_authorized_key { "${icinga_user}@${cert_name}":
           ensure => present,
           user   => $icinga_user,
           key    => $ssh_public_key,

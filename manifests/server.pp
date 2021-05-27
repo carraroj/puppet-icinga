@@ -24,13 +24,13 @@
 # @param [Optional[Stdlib::Host]] ca_server
 #   The CA to send the certificate request to.
 #
-# @param [Optional[String]] ticket_salt
+# @param [String] ticket_salt
 #   Set an alternate ticket salt to icinga::ticket_salt from Hiera.
 #
 # @param [String] web_api_user
 #   Icinga API user to connect Icinga 2.
 #
-# @param [Optional[String]] web_api_pass
+# @param [String] web_api_pass
 #   Icinga API user password.
 #
 # @param [Enum['file', 'syslog']] logging_type
@@ -47,12 +47,12 @@ class icinga::server(
   Hash[String,Hash]               $workers              = {},
   Array[String]                   $global_zones         = [],
   Optional[Stdlib::Host]          $ca_server            = undef,
-  Optional[String]                $ticket_salt          = undef,
+  String                          $ticket_salt          = $icinga::params::server_ticket_salt,
   String                          $web_api_user         = 'icingaweb2',
-  Optional[String]                $web_api_pass         = undef,
+  String                          $web_api_pass         = $icinga::params::web_api_pass,
   Enum['file', 'syslog']          $logging_type         = 'file',
   Optional[Icinga2::LogSeverity]  $logging_level        = undef,
-) {
+) inherits icinga::params {
 
   if empty($colocation_endpoints) {
     $_ca            = true
@@ -90,6 +90,12 @@ class icinga::server(
   }
 
   if $_config_server {
+    ::icinga2::object::apiuser { $web_api_user:
+      password    => $web_api_pass,
+      permissions => [ 'status/query', 'actions/*', 'objects/modify/*', 'objects/query/*' ],
+      target      => "/etc/icinga2/zones.d/${zone}/api-users.conf",
+    }
+
     ($global_zones + keys($_workers) + $zone).each |String $dir| {
       file { "${::icinga2::globals::conf_dir}/zones.d/${dir}":
         ensure => directory,
@@ -105,14 +111,6 @@ class icinga::server(
       purge   => true,
       recurse => true,
       force   => true,
-    }
-  }
-
-  if $web_api_pass {
-    ::icinga2::object::apiuser { $web_api_user:
-      password    => $web_api_pass,
-      permissions => [ 'status/query', 'actions/*', 'objects/modify/*', 'objects/query/*' ],
-      target      => "/etc/icinga2/zones.d/${zone}/api-users.conf",
     }
   }
 

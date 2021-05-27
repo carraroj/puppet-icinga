@@ -1,9 +1,6 @@
 # @summary
 #   Configure IDO Backend.
 #
-# @param [String] db_pass
-#   Password to connect the database.
-#
 # @param [Enum['mysql','pgsql']] db_type
 #   What kind of database type to use.
 #
@@ -19,6 +16,9 @@
 # @param [String] db_user
 #   Database user name.
 #
+# @param [String] db_pass
+#   Password to connect the database.
+#
 # @param [Boolean] manage_database
 #   Create database.
 #
@@ -26,15 +26,15 @@
 #   Enable HA feature for database.
 #
 class icinga::ido(
-  String                                 $db_pass,
   Enum['mysql','pgsql']                  $db_type         = 'mysql',
   Stdlib::Host                           $db_host         = 'localhost',
   Optional[Stdlib::Port]                 $db_port         = undef,
   String                                 $db_name         = 'icinga2',
   String                                 $db_user         = 'icinga2',
+  String                                 $db_pass         = $icinga::params::ido_db_pass,
   Boolean                                $manage_database = false,
   Boolean                                $enable_ha       = false,
-) {
+) inherits icinga::params {
 
   unless $db_port {
     $_db_port = $db_type ? {

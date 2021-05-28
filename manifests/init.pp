@@ -50,7 +50,7 @@ class icinga(
   Enum['file', 'syslog']               $logging_type    = 'file',
   Optional[Icinga2::LogSeverity]       $logging_level   = undef,
   String                               $cert_name       = downcase($facts['networking']['fqdn']),
-) {
+) inherits icinga::params {
 
   assert_private()
 

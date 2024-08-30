@@ -9,11 +9,6 @@ class icinga::repos::zypper {
   $repos   = $icinga::repos::list
   $managed = $icinga::repos::managed
 
-  # fix issue 21, 33
-  file { ['/etc/zypp/repos.d/netways-plugins.repo', '/etc/zypp/repos.d/netways-extras.repo']:
-    ensure => 'absent',
-  }
-
   $repos.each |String $repo_name, Hash $repo_config| {
     if $repo_name in keys($managed) and $managed[$repo_name] {
       if $repo_config['proxy'] {
@@ -31,14 +26,13 @@ class icinga::repos::zypper {
 
       -> zypprepo { $repo_name:
         *       => delete($repo_config, 'proxy'),
-        require => File['/etc/zypp/repos.d/netways-plugins.repo', '/etc/zypp/repos.d/netways-extras.repo'],
       }
 
       -> file_line { "add proxy settings to ${repo_name}":
         path => "/etc/zypp/repos.d/${repo_name}.repo",
         line => "proxy=${repo_config['proxy']}",
       }
-      -> Package <| |>
+      -> Package <| tag == 'icinga' or tag == 'icinga2' or tag == 'icingadb' or tag == 'icingaweb2' |>
     }
   }
 }

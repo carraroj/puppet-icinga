@@ -1,12 +1,12 @@
 {
-  "name": "icinga-icinga",
-  "version": "4.1.1",
-  "author": "Icinga",
+  "name": "puppet-icinga",
+  "version": "5.0.1-rc0",
+  "author": "Vox Pupuli",
   "summary": "Puppet Module to manage the Icinga Software Stack",
   "license": "Apache-2.0",
-  "source": "git://github.com/icinga/puppet-icinga",
-  "project_page": "https://github.com/icinga/puppet-icinga",
-  "issues_url": "https://github.com/icinga/puppet-icinga/issues",
+  "source": "git://github.com/voxpupuli/puppet-icinga",
+  "project_page": "https://github.com/voxpupuli/puppet-icinga",
+  "issues_url": "https://github.com/voxpupuli/puppet-icinga/issues",
   "dependencies": [
     {
       "name": "puppetlabs/stdlib",
@@ -14,7 +14,7 @@
     },
     {
       "name": "puppetlabs/apt",
-      "version_requirement": ">= 7.7.0 < 10.0.0"
+      "version_requirement": ">= 9.2.0 < 10.0.0"
     },
     {
       "name": "puppet/zypprepo",
@@ -61,8 +61,8 @@
     {
       "operatingsystem": "Debian",
       "operatingsystemrelease": [
-        "10",
-        "11"
+        "11",
+        "12"
       ]
     },
     {
@@ -91,13 +91,14 @@
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">= 7.0.0 < 9.0.0"
+      "version_requirement": ">= 7.9.0 < 9.0.0"
     }
   ],
   "tags": [
+    "icinga",
+    "icinga-server",
+    "icinga-worker",
+    "icinga-agent",
     "monitoring"
-  ],
-  "pdk-version": "3.0.0",
-  "template-url": "https://github.com/puppetlabs/pdk-templates#3.0.0",
-  "template-ref": "tags/3.0.0-0-g5bfc1c0"
+  ]
 }

@@ -1,6 +1,14 @@
 # icinga
 
-![Icinga Logo](https://www.icinga.com/wp-content/uploads/2014/06/icinga_logo.png)
+[![Build Status](https://github.com/voxpupuli/puppet-icinga/workflows/CI/badge.svg)](https://github.com/voxpupuli/puppet-icinga/actions?query=workflow%3ACI)
+[![Release](https://github.com/voxpupuli/puppet-icinga/actions/workflows/release.yml/badge.svg)](https://github.com/voxpupuli/puppet-icinga/actions/workflows/release.yml)
+[![Puppet Forge](https://img.shields.io/puppetforge/v/puppet/icinga.svg)](https://forge.puppet.com/modules/puppet/icinga)
+[![puppet integration](http://www.puppetmodule.info/images/badge.png)](https://icinga.com/products/integrations/puppet)
+[![Apache-2.0 License](https://img.shields.io/github/license/voxpupuli/puppet-icinga.svg)](LICENSE)
+[![Donated by Icinga](https://img.shields.io/badge/donated%20by-Icinga-fb7047.svg)](#transfer-notice)
+[![Sponsored by NETWAYS](https://img.shields.io/badge/Sponsored%20by-NETWAYS%20GmbH-blue.svg)](https://www.netways.de)
+
+[Icinga Logo](https://www.icinga.com/wp-content/uploads/2014/06/icinga_logo.png)
 
 #### Table of Contents
 
@@ -12,34 +20,40 @@
     * [Enable and disable repositories](#enable-and-disable-repositories)
     * [Installing from non upstream repositories](#Installing from Non-Upstream Repositories)
 4. [Reference](#reference)
-5. [Release notes](#release-notes)
 
 
 ## Description
 
 This module provides several non private helper classes for the other official Icinga modules:
 
-* [icinga/icinga2]
-* [icinga/icingaweb2]
-* [icinga/icingadb]
+* [icinga2](https://github.com/voxpupuli/puppet-icinga2)
+* [icingadb](https://github.com/voxpupuli/puppet-icingadb)
+* [icingaweb2](https://github.com/voxpupuli/puppet-icingaweb2)
 
-### What's new in v3.0.0
+### How to use the classes for Icinga Web an databases with MariaDB on Debian bookwork
 
-Support for the IcingaDB. For this purpose, the management of monitoring, previously exclusively the monitoring module, has been separated from the web class.
+To get Icinga Web 2 running on Debian bookworm use puppet-php >=8.1.0 (no longer necessary if puppet-php >= 10.2.0 is used) and set:
 
-From now on, the IDO based monitoring must be done by the additional declaration of the class `icinga::web::monitoring`. Likewise, the IcingaDB is configured with `icinga::web::icingadb`. Thus, the use of both in parallel is also possible.
+```yaml
+php::globals::php_version: '8.2'
+```
 
-### Changes in v2.9.0
+The current MariaDB logs to syslog by default so set:
 
-* Class icinga::repos got a new parameter 'manage_crb' to manage the CRB repository on CentOS Stream 9, Rocky 9 and AlmaLinux 9.
-* Add functions and a base class 'redis' to support the new IcingaDB from module [icingadb](https://github.com/Icinga/puppet-icingadb).
+```yaml
+mysql::server::override_options:
+  mysqld:
+    log-error: ~
+```
+
+This disables the logging to file and the requirement and management of an existing directory /var/log/mysql.
 
 ## Setup
 
 ### What the Icinga Puppet module supports
 
 * [icinga::repos] involves the needed repositories to install icinga2, icingadb and icingaweb2:
-    * The Icinga Project repository for the stages: stable, testing or nightly builds 
+    * The Icinga Project repository for the stages: stable, testing or nightly builds
     * EPEL repository for RHEL simular platforms
     * Backports repository for Debian and Ubuntu
     * NETWAYS extras repository for Icinga Web 2
@@ -57,26 +71,31 @@ The requirements depend on the class to be used.
 ### Beginning with icinga
 
 Add this declaration to your Puppetfile:
+
 ```
 mod 'icinga',
   :git => 'https://github.com/icinga/puppet-icinga.git',
   :tag => 'v2.5.0'
 ```
+
 Then run:
+
 ```
 bolt puppetfile install
 ```
 
 Or do a `git clone` by hand into your modules directory:
+
 ```
 git clone https://github.com/icinga/puppet-icinga.git icinga
 ```
+
 Change to `icinga` directory and check out your desired version:
+
 ```
 cd icinga
 git checkout v2.5.0
 ```
-
 
 ## Usage
 
@@ -84,28 +103,33 @@ git checkout v2.5.0
 
 The class supports:
 
-* [puppet] >= 7.0 < 9.0
+* [puppet] >= 7.9.0 < 9.0.0
 
-And requiers:
+And requires:
 
 * [puppetlabs/stdlib] >= 6.6.0 < 10.0.0
-* [puppetlabs/apt] >= 7.7.0 < 10.0.0
+* [puppetlabs/apt] >= 9.2.0 < 10.0.0
 * [puppet/zypprepo] >= 4.0.0 < 6.0.0
 * [puppetlabs/yumrepo_core] >= 1.1.0 < 3.0.0
 
 By default the upstream Icinga repository for stable release are involved.
-```
+
+```puppet
 include icinga::repos
 ```
+
 To setup the testing repository for release candidates use instead:
-```
+
+```puppet
 class { 'icinga::repos':
   manage_stable  => false,
   manage_testing => true,
 }
 ```
+
 Or the nightly builds:
-```
+
+```puppet
 class { 'icinga::repos':
   manage_stable  => false,
   manage_nightly => true,
@@ -113,14 +137,15 @@ class { 'icinga::repos':
 ```
 
 Other possible needed repositories like EPEL on RHEL or the Backports on Debian can also be involved:
-```
+
+```puppet
 class { 'icinga::repos':
   manage_epel         => true,
   configure_backports => true,
 }
 ```
+
 The prefix `configure` means that the repository is not manageable by the module. But backports can be configured by the class apt::backports, that is used by this module.
-  
 
 #### Enable and Disable Repositories
 
@@ -135,8 +160,9 @@ When manage is set to `true` for a repository the ressource is managed and the r
 * netways-plugins
 * netways-extras
 
-An example for Yum or Zypper based platforms to change from stable to testing repo: 
-```
+An example for Yum or Zypper based platforms to change from stable to testing repo:
+
+```yaml
 ---
 icinga::repos::manage_testing: true
 icinga::repos:
@@ -145,7 +171,8 @@ icinga::repos:
 ```
 
 Or on Apt based platforms:
-```
+
+```yaml
 ---
 icinga::repos::manage_testing: true
 icinga::repos:
@@ -159,7 +186,7 @@ For some time now, access to current RPM packages on Icinga has required a paid 
 
 A subscription is required, it is configured as follows, e.g. in hiera:
 
-```bash
+```yaml
 ---
 icinga::repos:
   icinga-stable-release:
@@ -182,13 +209,15 @@ To change to a non upstream repository, e.g. a local mirror, the repos can be cu
 * netways-extras
 
 An example to configure a local mirror of the stable release:
-```
+
+```yaml
 ---
 icinga::repos:
   icinga-stable-release:
     baseurl: 'https://repo.example.com/icinga/epel/$releasever/release/'
     gpgkey: https://repo.example.com/icinga/icinga.key
 ```
+
 IMPORTANT: The configuration hash depends on the platform an requires one of the following resources:
 
 * apt::source (Debian family, https://forge.puppet.com/puppetlabs/apt)
@@ -199,7 +228,7 @@ Also the Backports repo on Debian can be configured like the apt class of course
 
 As an example, how you configure backports on a debian squeeze. For squeeze the repository is already moved to the unsupported archive:
 
-```
+```yaml
 ---
 apt::confs:
   no-check-valid-until:
@@ -215,9 +244,9 @@ The class supports:
 
 * [puppet] >= 7.0 < 9.0
 
-And requiers:
+And requires:
 
-* [icinga/icinga2] >= 3.1.0 < 5.0.0
+* [icinga/icinga2] >= 3.1.0 < 6.0.0
 
 Setting up a Icinga Server with a CA and to store configuration:
 
@@ -252,15 +281,15 @@ If `icinga::ticket_salt` is also set in Hiera for the worker, he's automatically
 
 Both, server and workers, can operated with a parnter in the same zone to share load. The endpoint of the respective partner is specified as an Icinga object in `colocation_endpoints`.
 
-```
+```puppet
 colocation_endpoints => { 'server2.example.org' => { 'host' => '172.16.1.12', } },
-``` 
+```
 
 Of course, the second endpoint must also be specified in the respective `parent_endpoints` of the worker or agent.
 
 An agent is very similar to a worker, only it has no parameter `colocation_endpoints`:
 
-```
+```puppet
 class { 'icinga::agent':
   ca_server        => '172.16.1.11',
   parent_endpoints => { 'worker.example.org' => { 'host' => '172.16.2.11', }, } },
@@ -279,14 +308,14 @@ The class supports:
 
 Ands requires:
 
-* [puppetlabs/mysql] >= 10.9.0 =< 16.0.0
+* [puppetlabs/mysql] >= 10.9.0 < 16.0.0
 * [puppetlabs/postgresql] >= 7.0.0 < 11.0.0
-* [icinga/icinga2] >= 2.9.0 < 5.0.0
+* [icinga/icinga2] >= 2.9.0 < 6.0.0
 * [icinga/icingadb] >= 1.0.0 < 3.0.0
 
 To activate and configure the IcingaDB (usally on a server) do:
 
-```
+```puppet
 class { 'icinga::db':
   db_type         => 'pgsql',
   db_host         => 'localhost',
@@ -307,13 +336,13 @@ The class supports:
 
 Ands requires:
 
-* [puppetlabs/mysql] >= 10.9.0 =< 16.0.0
+* [puppetlabs/mysql] >= 10.9.0 < 16.0.0
 * [puppetlabs/postgresql] >= 7.0.0 < 11.0.0
-* [icinga/icinga2] >= 2.9.0 < 5.0.0
+* [icinga/icinga2] >= 2.9.0 < 6.0.0
 
 To activate and configure the IDO feature (usally on a server) do:
 
-```
+```puppet
 class { 'icinga::ido':
   db_type         => 'pgsql',
   db_host         => 'localhost',
@@ -332,16 +361,16 @@ The class supports:
 
 And requires:
 
-* [puppetlabs/mysql] >= 10.9.0 =< 16.0.0
+* [puppetlabs/mysql] >= 10.9.0 < 16.0.0
 * [puppetlabs/postgresql] >= 7.0.0 < 11.0.0
 * [icinga/icingaweb2] >= 3.6.0 < 5.0.0
-* [icinga/icinga2] >= 2.9.0 < 5.0.0
+* [icinga/icinga2] >= 2.9.0 < 6.0.0
 * [puppetlabs/apache] >= 5.8.0 < 12.0.0
 * [puppet/php] >= 8.0.0 < 11.0.0
 
 A Icinga Web 2 with an Apache and PHP-FPM can be managed as follows:
 
-```
+```puppet
 class { 'icinga::web':
   db_type         => 'pgsql',
   db_host         => 'localhost',
@@ -359,7 +388,7 @@ IMPORTANT: If you plan tu use icingacli as plugin, e.g. director health checks, 
 
 If the Icinga Web 2 is operated on the same host as the IcingaDB, the required user credentials can be accessed, otherwise they must be specified explicitly.
 
-```
+```puppet
 class { 'icinga::web::icingadb':
   db_type => $icinga::db::db_type,
   db_host => $icinga::db::db_host,
@@ -375,7 +404,7 @@ IMPORTANT: Must be declared on the same host as `icinga::web`.
 
 If the Icinga Web 2 is operated on the same host as the IDO, the required user credentials can be accessed, otherwise they must be specified explicitly.
 
-```
+```puppet
 class { 'icinga::web::monitoring':
   db_type => $icinga::ido::db_type,
   db_host => $icinga::ido::db_host,
@@ -391,7 +420,7 @@ Install and manage the famous Icinga Director and the required database. A graph
 
 Here an example with an PostgreSQL database on the same host:
 
-```
+```puppet
 class { 'icinga::web::director':
   db_type         => 'pgsql',
   db_host         => 'localhost',
@@ -410,7 +439,7 @@ In this example the Icinga server is running on the same Host like the web and t
 
 The following example sets up the `vspheredb` Icinga Web 2 module and the required database. At this time only MySQL/MariaDB is support by the Icinga team, so this class also supports only `mysql`.
 
-```
+```puppet
 class { 'icinga::web::vspheredb':
   db_type         => 'mysql',
   db_host         => 'localhost',
@@ -427,13 +456,13 @@ The class supports:
 
 And required in addition to `icinga::web::icingadb` or `icinga::web::monitoring`:
 
-* [puppetlabs/mysql] >= 10.9.0 =< 16.0.0
+* [puppetlabs/mysql] >= 10.9.0 < 16.0.0
 * [puppetlabs/postgresql] >= 7.0.0 < 11.0.0
 * [icinga/icingaweb2] >= 3.7.0 < 5.0.0
 
 An example to setup reporting and the required database:
 
-```
+```puppet
 class { 'icinga::web::reporting':
   db_type         => 'pqsql',
   db_host         => 'localhost',
@@ -447,8 +476,12 @@ If icinga::web::monitoring is declared before, the required module idoreports fo
 
 ## Reference
 
-See [REFERENCE.md](https://github.com/Icinga/puppet-icinga/blob/master/REFERENCE.md)
+See [REFERENCE.md](https://github.com/voxpupuli/puppet-icinga/blob/main/REFERENCE.md)
 
-## Release Notes
+## Transfer Notice
 
-This code is a very early release and may still be subject to significant changes.
+This plugin was originally authored by [Icinga](http://www.icinga.com).
+The maintainer preferred that Vox Pupuli take ownership of the module for future improvement and maintenance.
+Existing pull requests and issues were transferred over, please fork and continue to contribute here instead of Icinga.
+
+Previously: https://github.com/icinga/puppet-icinga

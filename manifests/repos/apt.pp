@@ -15,20 +15,21 @@ class icinga::repos::apt {
 
   if $configure_backports {
     include apt::backports
-    Apt::Source['backports'] -> Package <| title != 'apt-transport-https' |>
-  }
-
-  # fix issue 21, 33
-  file { ['/etc/apt/sources.list.d/netways-plugins.list', '/etc/apt/sources.list.d/netways-extras.list']:
-    ensure => 'absent',
+    Apt::Source['backports'] -> Package <| tag == 'icinga' or tag == 'icinga2' or tag == 'icingadb' or tag == 'icingaweb2' |>
   }
 
   $repos.each |String $repo_name, Hash $repo_config| {
     if $managed[$repo_name] {
-      Apt::Source[$repo_name] -> Package <| title != 'apt-transport-https' |>
+      if $repo_config['key'] and !$repo_config['key']['id'] {
+        ensure_resource('apt::keyring', $repo_config['key']['name'], $repo_config['key'])
+        $_repo_config = $repo_config - 'key' + { 'keyring' => "/etc/apt/keyrings/${repo_config['key']['name']}" }
+      } else {
+        $_repo_config = $repo_config
+      }
+
+      Apt::Source[$repo_name] -> Package <| tag == 'icinga' or tag == 'icinga2' or tag == 'icingadb' or tag == 'icingaweb2' |>
       apt::source { $repo_name:
-        *       => { ensure => present } + $repo_config,
-        require => File['/etc/apt/sources.list.d/netways-plugins.list', '/etc/apt/sources.list.d/netways-extras.list'],
+        * => { ensure => present } + $_repo_config,
       }
     }
   }

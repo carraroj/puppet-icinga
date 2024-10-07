@@ -100,7 +100,7 @@ class icinga::web (
 
     'Suse': {
       $php_globals = {
-        php_version => 'php8.0',
+        php_version => 'php8*',
       }
     } # Suse
 

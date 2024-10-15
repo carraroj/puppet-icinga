@@ -15,6 +15,13 @@
 #   Either turn on or off the apache cgi pass thru auth.
 #   An option available since Apache v2.4.15 and required for authenticated access to the Icinga Web Api.
 #
+# @param apache_extra_mods
+#   List of addational Apache modules to load.
+#
+# @param apache_config
+#   Wether or not install an default Apache config for Icinga Web 2. If set to `true` Icinga is
+#   reachable via `/icingaweb2`.
+#
 # @param db_type
 #   What kind of database type to use.
 #
@@ -46,16 +53,18 @@ class icinga::web (
   Icinga::Secret                              $db_pass,
   Icinga::Secret                              $api_pass,
   Boolean                                     $apache_cgi_pass_auth,
-  String                                      $default_admin_user = 'icingaadmin',
+  String[1]                                   $default_admin_user = 'icingaadmin',
   Icinga::Secret                              $default_admin_pass = 'icingaadmin',
   Enum['mysql', 'pgsql']                      $db_type            = 'mysql',
   Stdlib::Host                                $db_host            = 'localhost',
   Optional[Stdlib::Port::Unprivileged]        $db_port            = undef,
-  String                                      $db_name            = 'icingaweb2',
-  String                                      $db_user            = 'icingaweb2',
+  String[1]                                   $db_name            = 'icingaweb2',
+  String[1]                                   $db_user            = 'icingaweb2',
   Boolean                                     $manage_database    = false,
   Variant[Stdlib::Host, Array[Stdlib::Host]]  $api_host           = 'localhost',
-  String                                      $api_user           = 'icingaweb2',
+  String[1]                                   $api_user           = 'icingaweb2',
+  Array[String[1]]                            $apache_extra_mods  = [],
+  Boolean                                     $apache_config      = true,
 ) {
   # install all required php extentions
   # by icingaweb (done by package dependencies) before PHP
@@ -155,11 +164,16 @@ class icinga::web (
   include apache::mod::proxy_http
   include apache::mod::ssl
 
-  apache::custom_config { 'icingaweb2':
-    ensure        => present,
-    content       => template('icinga/apache_custom_default.conf.erb'),
-    verify_config => false,
-    priority      => false,
+  # Load additional modules
+  include prefix($apache_extra_mods, 'apache::mod::')
+
+  if $apache_config {
+    apache::custom_config { 'icingaweb2':
+      ensure        => present,
+      content       => template('icinga/apache_custom_default.conf.erb'),
+      verify_config => false,
+      priority      => false,
+    }
   }
 
   #

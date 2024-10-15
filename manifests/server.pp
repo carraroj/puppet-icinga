@@ -59,15 +59,15 @@ class icinga::server (
   Icinga::LogLevel                   $logging_level,
   Boolean                            $ca                   = false,
   Boolean                            $config_server        = false,
-  String                             $zone                 = 'main',
-  Hash[String,Hash]                  $colocation_endpoints = {},
-  Hash[String,Hash]                  $workers              = {},
-  Array[String]                      $global_zones         = [],
+  String[1]                          $zone                 = 'main',
+  Hash[String[1], Hash]              $colocation_endpoints = {},
+  Hash[String[1], Hash]              $workers              = {},
+  Array[String[1]]                   $global_zones         = [],
   Optional[Stdlib::Host]             $ca_server            = undef,
   Optional[Icinga::Secret]           $ticket_salt          = undef,
-  String                             $web_api_user         = 'icingaweb2',
+  String[1]                          $web_api_user         = 'icingaweb2',
   Optional[Icinga::Secret]           $web_api_pass         = undef,
-  String                             $director_api_user    = 'director',
+  String[1]                          $director_api_user    = 'director',
   Optional[Icinga::Secret]           $director_api_pass    = undef,
   Boolean                            $run_web              = false,
   Enum['ecdsa','ed25519','rsa']      $ssh_key_type         = rsa,
@@ -127,11 +127,12 @@ class icinga::server (
 
     ($global_zones + keys($_workers) + $zone).each |String $dir| {
       file { "${icinga2::globals::conf_dir}/zones.d/${dir}":
-        ensure => directory,
-        tag    => 'icinga2::config::file',
-        owner  => $icinga2::globals::user,
-        group  => $icinga2::globals::group,
-        mode   => '0750',
+        ensure  => directory,
+        tag     => 'icinga2::config::file',
+        owner   => $icinga2::globals::user,
+        group   => $icinga2::globals::group,
+        mode    => '0750',
+        seltype => 'icinga2_etc_t',
       }
     }
   } else {
@@ -140,6 +141,7 @@ class icinga::server (
       purge   => true,
       recurse => true,
       force   => true,
+      seltype => 'icinga2_etc_t',
     }
   }
 }

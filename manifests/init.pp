@@ -48,18 +48,18 @@
 #
 class icinga (
   Boolean                                 $ca,
-  String                                  $this_zone,
-  Hash[String, Hash]                      $zones,
-  String                                  $cert_name,
+  String[1]                               $this_zone,
+  Hash[String[1], Hash]                   $zones,
+  String[1]                               $cert_name,
   Optional[Stdlib::Host]                  $ca_server       = undef,
   Optional[Icinga::Secret]                $ticket_salt     = undef,
-  Array[String]                           $extra_packages  = [],
+  Array[String[1]]                        $extra_packages  = [],
   Enum['file', 'syslog', 'eventlog']      $logging_type    = 'file',
   Optional[Icinga::LogLevel]              $logging_level   = undef,
   Optional[Icinga::Secret]                $ssh_private_key = undef,
   Optional[Enum['ecdsa','ed25519','rsa']] $ssh_key_type    = undef,
   Boolean                                 $prepare_web     = false,
-  Variant[Boolean, String]                $confd           = false,
+  Variant[Boolean, String[1]]             $confd           = false,
 ) {
   assert_private()
 
@@ -87,6 +87,13 @@ class icinga (
     manage_packages => $manage_packages,
     constants       => lookup('icinga2::constants', undef, undef, {}) + $_constants,
     features        => [],
+  }
+
+  # check selinux
+  $_selinux = if fact('os.selinux.enabled') and $facts['os']['selinux']['enabled'] and $icinga2::globals::selinux_package_name {
+    $icinga2::manage_selinux
+  } else {
+    false
   }
 
   # switch logging between mainlog, syslog and eventlog
@@ -125,16 +132,20 @@ class icinga (
 
   case $facts['kernel'] {
     'linux': {
-      $icinga_user    = $icinga2::globals::user
-      $icinga_group   = $icinga2::globals::group
-      $icinga_package = $icinga2::globals::package_name
-      $icinga_service = $icinga2::globals::service_name
+      $icinga_user     = $icinga2::globals::user
+      $icinga_group    = $icinga2::globals::group
+      $icinga_service  = $icinga2::globals::service_name
+      $icinga_packages = if $_selinux {
+        [$icinga2::globals::package_name, $icinga2::globals::selinux_package_name] + $extra_packages
+      } else {
+        [$icinga2::globals::package_name] + $extra_packages
+      }
 
       case $facts['os']['family'] {
         'redhat': {
           $icinga_user_homedir = $icinga2::globals::spool_dir
 
-          package { ['nagios-common', $icinga_package] + $extra_packages:
+          package { ['nagios-common'] + $icinga_packages:
             ensure => installed,
             before => Class['icinga2'],
           }
@@ -147,7 +158,7 @@ class icinga (
         'debian': {
           $icinga_user_homedir = '/var/lib/nagios'
 
-          package { [$icinga_package] + $extra_packages:
+          package { $icinga_packages:
             ensure => installed,
             before => Class['icinga2'],
           }
@@ -156,7 +167,7 @@ class icinga (
         'suse': {
           $icinga_user_homedir = $icinga2::globals::spool_dir
 
-          package { [$icinga_package] + $extra_packages:
+          package { $icinga_packages:
             ensure => installed,
             before => Class['icinga2'],
           }
@@ -191,7 +202,8 @@ class icinga (
             ensure  => file,
             owner   => $icinga_user,
             group   => $icinga_group,
-            require => Package[$icinga_package];
+            seltype => 'icinga2_spool_t',
+            require => Package[$icinga_packages];
           ["${icinga_user_homedir}/.ssh", "${icinga_user_homedir}/.ssh/controlmasters"]:
             ensure => directory,
             mode   => '0700';
